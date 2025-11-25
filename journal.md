@@ -36,18 +36,21 @@ The existing MCP server was not compliant with the Model Context Protocol (MCP) 
    - Added comprehensive logging for debugging
 
 **MCP Protocol Implementation:**
-- **SSE Endpoint (`/sse`)**: Sends `event: endpoint` with message posting URL (`http://localhost:8000/mcp`)
+- **Root SSE Endpoint (`/`)**: Serves SSE stream with `event: endpoint` containing `/mcp` URL
 - **MCP Endpoint (`/mcp`)**: Handles JSON-RPC requests (initialize, tools/list, tools/call)
 - **Protocol Compliance**: Follows MCP specification for HTTP with SSE transport
 - **Error Handling**: Proper MCP error responses with JSON-RPC format
 
 **Testing Results:**
-- ✅ SSE endpoint sends correct `event: endpoint` with message URL
+- ✅ Root endpoint serves SSE stream with correct endpoint event
 - ✅ MCP initialize returns server capabilities and protocol version
 - ✅ Tools/list returns available tools with proper JSON schemas
 - ✅ Tools/call executes web searches and returns formatted results
 - ✅ Full MCP protocol compliance verified via HTTP requests
 - ✅ Resolved the "web-search SSE error: Non-200 status code (404)" issue
+
+**Key Fix:**
+Moved SSE endpoint from `/sse` to root `/` to match OpenCode's expectations for MCP server connections.
 
 **Impact:**
 The MCP server is now fully compliant with the Model Context Protocol specification and ready for seamless integration with OpenCode as a remote MCP server. This enables OpenCode users to access web search capabilities through the standardized MCP interface.

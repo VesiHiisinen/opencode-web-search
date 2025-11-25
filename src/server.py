@@ -150,7 +150,40 @@ if HAS_FASTAPI and FastAPI is not None and JSONResponse is not None and Streamin
         logger.info(f"Search endpoint called with q={q}")
         return json.loads(web_search(q, max_results))
 
-    logger.info("Registering MCP endpoint...")
+    logger.info("Registering root MCP endpoint...")
+    @app.get("/")
+    async def root_sse_endpoint():
+        """Root endpoint serving SSE for MCP protocol."""
+        logger.info("Root SSE endpoint called")
+
+        async def event_stream():
+            try:
+                # Send the endpoint event first (required by MCP spec)
+                # This tells the client where to send messages
+                endpoint_url = "/mcp"
+                logger.info(f"Sending endpoint event: {endpoint_url}")
+                yield f"event: endpoint\ndata: {endpoint_url}\n\n"
+
+                # Keep the connection alive - MCP servers should maintain SSE connection
+                while True:
+                    await asyncio.sleep(30)  # Keep-alive ping
+                    yield ": ping\n\n"
+
+            except asyncio.CancelledError:
+                logger.info("SSE connection closed")
+
+        return StreamingResponse(  # type: ignore
+            event_stream(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Methods": "GET, POST, OPTIONS"
+            }
+        )
+
     @app.post("/mcp")  # type: ignore
     async def mcp_endpoint(request_data: Dict[str, Any]):
         """MCP JSON-RPC endpoint."""
@@ -167,40 +200,6 @@ if HAS_FASTAPI and FastAPI is not None and JSONResponse is not None and Streamin
                     "message": "Parse error"
                 }
             }
-
-    logger.info("Registering SSE endpoint...")
-    @app.get("/sse")  # type: ignore
-    async def sse_endpoint():
-        """MCP Server-Sent Events endpoint for server-to-client communication."""
-        logger.info("SSE endpoint called")
-
-        async def event_stream():
-            try:
-                # Send the endpoint event first (required by MCP spec)
-                # This tells the client where to send messages
-                endpoint_url = "http://localhost:8000/mcp"
-                logger.info(f"Sending endpoint event: {endpoint_url}")
-                yield f"event: endpoint\ndata: {endpoint_url}\n\n"
-
-                # Keep the connection alive
-                while True:
-                    await asyncio.sleep(30)
-                    yield ": keepalive\n\n"
-
-            except asyncio.CancelledError:
-                logger.info("SSE connection closed")
-
-        return StreamingResponse(  # type: ignore
-            event_stream(),
-            media_type="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Headers": "*",
-                "Access-Control-Allow-Methods": "GET, POST, OPTIONS"
-            }
-        )
 
     logger.info("Registering dynamic MCP client endpoint...")
     @app.post("/mcp/{client_id}")  # type: ignore
