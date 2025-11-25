@@ -171,17 +171,22 @@ if HAS_FASTAPI and FastAPI is not None and JSONResponse is not None and Streamin
     logger.info("Registering SSE endpoint...")
     @app.get("/sse")  # type: ignore
     async def sse_endpoint():
-        """MCP Server-Sent Events endpoint."""
+        """MCP Server-Sent Events endpoint for server-to-client communication."""
         logger.info("SSE endpoint called")
+
         async def event_stream():
             try:
-                # Send initial connection event
-                yield f"data: {json.dumps({'type': 'connected', 'timestamp': datetime.now().isoformat()})}\n\n"
+                # Send the endpoint event first (required by MCP spec)
+                # This tells the client where to send messages
+                endpoint_url = "http://localhost:8000/mcp"
+                logger.info(f"Sending endpoint event: {endpoint_url}")
+                yield f"event: endpoint\ndata: {endpoint_url}\n\n"
 
-                # Keep connection alive with periodic pings
+                # Keep the connection alive
                 while True:
-                    await asyncio.sleep(30)  # Ping every 30 seconds
-                    yield f"data: {json.dumps({'type': 'ping', 'timestamp': datetime.now().isoformat()})}\n\n"
+                    await asyncio.sleep(30)
+                    yield ": keepalive\n\n"
+
             except asyncio.CancelledError:
                 logger.info("SSE connection closed")
 
@@ -192,9 +197,28 @@ if HAS_FASTAPI and FastAPI is not None and JSONResponse is not None and Streamin
                 "Cache-Control": "no-cache",
                 "Connection": "keep-alive",
                 "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Headers": "*"
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Methods": "GET, POST, OPTIONS"
             }
         )
+
+    logger.info("Registering dynamic MCP client endpoint...")
+    @app.post("/mcp/{client_id}")  # type: ignore
+    async def mcp_client_endpoint(client_id: str, request_data: Dict[str, Any]):
+        """Dynamic MCP endpoint for specific client connections."""
+        logger.info(f"MCP client endpoint called for client {client_id}")
+        try:
+            response = mcp_server.handle_request(request_data)
+            return response
+        except Exception as e:
+            logger.error(f"MCP client endpoint error: {e}")
+            return {
+                "jsonrpc": "2.0",
+                "error": {
+                    "code": -32700,
+                    "message": "Parse error"
+                }
+            }
 
     logger.info("All endpoints registered")
 else:
