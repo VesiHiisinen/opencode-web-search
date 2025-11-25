@@ -150,11 +150,42 @@ if HAS_FASTAPI and FastAPI is not None and JSONResponse is not None and Streamin
         logger.info(f"Search endpoint called with q={q}")
         return json.loads(web_search(q, max_results))
 
-    logger.info("Registering root MCP endpoint...")
+    logger.info("Registering root endpoint...")
     @app.get("/")
-    async def root_sse_endpoint():
-        """Root endpoint serving SSE for MCP protocol."""
-        logger.info("Root SSE endpoint called")
+    async def root_endpoint():
+        """Root endpoint returning tool information for OpenCode."""
+        # Return tool information in a format that OpenCode might expect
+        return {
+            "tools": [
+                {
+                    "name": "web_search",
+                    "description": "Perform a web search using DuckDuckGo",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {
+                            "query": {
+                                "type": "string",
+                                "description": "Search query string"
+                            },
+                            "max_results": {
+                                "type": "integer",
+                                "description": "Maximum number of results to return",
+                                "default": 10,
+                                "minimum": 1,
+                                "maximum": 50
+                            }
+                        },
+                        "required": ["query"]
+                    }
+                }
+            ]
+        }
+
+    logger.info("Registering SSE endpoint...")
+    @app.get("/sse")
+    async def sse_endpoint():
+        """MCP Server-Sent Events endpoint for server-to-client communication."""
+        logger.info("SSE endpoint called")
 
         async def event_stream():
             try:
@@ -164,9 +195,9 @@ if HAS_FASTAPI and FastAPI is not None and JSONResponse is not None and Streamin
                 logger.info(f"Sending endpoint event: {endpoint_url}")
                 yield f"event: endpoint\ndata: {endpoint_url}\n\n"
 
-                # Keep the connection alive - MCP servers should maintain SSE connection
+                # Keep the connection alive
                 while True:
-                    await asyncio.sleep(30)  # Keep-alive ping
+                    await asyncio.sleep(30)
                     yield ": ping\n\n"
 
             except asyncio.CancelledError:
