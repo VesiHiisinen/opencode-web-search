@@ -1,0 +1,39 @@
+### USER
+We need to develop an MCP  (Model Context Protocol) server to implement web search capability to OpenCode via custom tool.
+  
+I’d like to develop this with Node.JS/TS, but I’m not sure if the support for MCP is mature enought.
+  
+Research this question, and then provide me either suggestion for Node.JS if the ecosystem is mature enough, or alternatively Python, which has excellent support for MCP.
+  
+I’m junior level at Python, so I’d rather use Node.JS/TS if it’s a viable option.
+
+### ASSISTANT
+<details type="reasoning" done="true" duration="33">
+<summary>Thought for 33 seconds</summary>
+&gt; Okay, let&#x27;s tackle this user&#x27;s query. They want to develop an MCP server for web search with OpenCode using Node.js/TS but are unsure about the ecosystem&#x27;s maturity. They prefer Node.js if it&#x27;s viable, otherwise Python.
+&gt; 
+&gt; First, I need to check the provided context. Looking at the sources:
+&gt; 
+&gt; Source 1 mentions a user&#x27;s struggle with implementing an MCP server in Node.js, encountering errors with the Inspector. However, they managed to run a Python server. This suggests that while Node.js has some support, there might be challenges, especially with tools like the MCP Inspector.
+&gt; 
+&gt; Source 2 lists various topics related to MCP, including Python and Node.js SDKs, best practices, and generators. It mentions &quot;MCP TypeScript SDK for Building Clients and Servers&quot; and &quot;MCP Python SDK,&quot; indicating that both languages have resources. However, the presence of &quot;Ready to Generate?&quot; repeated might be a formatting issue, but the key point is that there are tools available for both.
+&gt; 
+&gt; Source 3 discusses transport modes (stdio vs. stream HTTP/SSE) and mentions Python&#x27;s FastMCP. This implies Python has specific libraries or frameworks for MCP, which could be more mature. The user is considering Node.js, but if Python&#x27;s ecosystem is more established, that might be a better choice despite the user&#x27;s preference.
+&gt; 
+&gt; The user is a junior in Python, so switching to Python might be challenging. However, if Node.js support is insufficient, they might need to consider it. The context doesn&#x27;t explicitly state the maturity comparison between Python and Node.js for MCP. Source 1&#x27;s user had issues with Node.js, but that&#x27;s an individual experience. Source 2&#x27;s mention of TypeScript SDK suggests some support, but maybe not as comprehensive as Python&#x27;s.
+&gt; 
+&gt; Since the context doesn&#x27;t provide a direct comparison of maturity, I should note that. The user&#x27;s own experience in Source 1 indicates potential hurdles in Node.js, but without explicit maturity info, I can&#x27;t confirm. Therefore, I should advise that while Node.js has some tools, Python&#x27;s support might be more mature based on the available resources. However, the user&#x27;s preference and skill level should be considered, suggesting they might need to choose based on available documentation and community support.
+</details>
+Based on the context provided, there are indications that both Node.js/TS and Python ecosystems have resources for MCP server development, but with differing levels of maturity and tooling. Here's a breakdown:
+
+1. **Node.js/TS Ecosystem**:  
+   - The context mentions the existence of an "MCP TypeScript SDK for Building Clients and Servers" [2], suggesting some level of support. However, the user's personal experience described in the context highlights challenges in getting an MCP server to work with tools like the MCP Inspector, including errors related to parameters, return values, and file paths [1]. This implies that while foundational tools exist, the ecosystem may not yet be fully mature or well-documented for production use.
+
+2. **Python Ecosystem**:  
+   - The context explicitly references "MCP Python SDK – Model Context Protocol Clients and Servers" [2] and mentions "Implementing MCP using Python’s FastMCP" [3], indicating more concrete tooling and possibly greater maturity in Python for MCP development. Additionally, the context lists Python-specific resources like "MCP Server Security," "MCP Authentication," and "MCP Best Practices," which may reflect a more established ecosystem [2].
+
+3. **Recommendation**:  
+   - If **Node.js/TS** is your priority and you are comfortable troubleshooting less-documented tooling, you could proceed but expect a steeper learning curve and potential gaps in community support [1].  
+   - If **Python** is viable despite your junior-level experience, the ecosystem's maturity (as suggested by the context) may reduce development friction [2][3]. However, this would require investing time to build Python proficiency.  
+
+Given the context’s emphasis on Python’s tooling and the challenges described for Node.js, Python may currently be the more viable option for a robust MCP server implementation. That said, the context does not provide definitive evidence of Python’s superiority, only that it has more explicit tooling references. For a junior developer, Python’s maturity could save significant time in debugging and implementation.

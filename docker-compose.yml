@@ -1,0 +1,14 @@
+services:
+  web-search:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: web-search-server
+    ports:
+      - "8000:8000"
+    environment:
+      PYTHONUNBUFFERED: "1"
+    restart: unless-stopped
+    # For debugging, you can add:
+    # command: python src/server.py
+    # Or keep default entrypoint in Dockerfile
