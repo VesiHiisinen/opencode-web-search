@@ -10,7 +10,9 @@ import asyncio
 import json
 import logging
 import sys
+import uuid
 from typing import Any, Dict, List, Optional
+from datetime import datetime
 
 # Try to import dependencies with proper error handling
 try:
@@ -23,23 +25,19 @@ except ImportError as e:
     BeautifulSoup = None
     logging.warning(f"Dependencies not available: {e}")
 
-# Try to import FastMCP, fallback to basic implementation if not available
-try:
-    from fastmcp import FastMCP  # type: ignore
-    HAS_FASTMCP = True
-except ImportError as e:
-    HAS_FASTMCP = False
-    FastMCP = None  # Define as None for type checking
-    logging.warning(f"FastMCP not available: {e}")
-
 # Try to import FastAPI for HTTP server
 try:
-    from fastapi import FastAPI  # type: ignore
+    from fastapi import FastAPI, Request, HTTPException  # type: ignore
+    from fastapi.responses import StreamingResponse, JSONResponse  # type: ignore
     import uvicorn  # type: ignore
     HAS_FASTAPI = True
 except ImportError as e:
     HAS_FASTAPI = False
     FastAPI = None
+    Request = None
+    HTTPException = None
+    StreamingResponse = None
+    JSONResponse = None
     uvicorn = None
     logging.warning(f"FastAPI not available: {e}")
 
@@ -132,18 +130,75 @@ if HAS_DEPENDENCIES:
 
 # Create FastAPI app if available
 app = None
-if HAS_FASTAPI and FastAPI is not None:
+logger.info(f"HAS_FASTAPI: {HAS_FASTAPI}, FastAPI: {FastAPI}, JSONResponse: {JSONResponse}, StreamingResponse: {StreamingResponse}")
+if HAS_FASTAPI and FastAPI is not None and JSONResponse is not None and StreamingResponse is not None:
+    logger.info("Creating FastAPI app...")
     app = FastAPI(title="MCP Web Search Server", description="Web search API for OpenCode")
+    logger.info(f"FastAPI app created: {app}")
 
+    logger.info("Registering health endpoint...")
     @app.get("/health")
     async def health():
         """Health check endpoint."""
+        logger.info("Health endpoint called")
         return json.loads(search_health())
 
+    logger.info("Registering search endpoint...")
     @app.get("/search")
     async def search_endpoint(q: str, max_results: int = 10):
         """Web search endpoint."""
+        logger.info(f"Search endpoint called with q={q}")
         return json.loads(web_search(q, max_results))
+
+    logger.info("Registering MCP endpoint...")
+    @app.post("/mcp")  # type: ignore
+    async def mcp_endpoint(request_data: Dict[str, Any]):
+        """MCP JSON-RPC endpoint."""
+        logger.info("MCP endpoint called")
+        try:
+            response = mcp_server.handle_request(request_data)
+            return response
+        except Exception as e:
+            logger.error(f"MCP endpoint error: {e}")
+            return {
+                "jsonrpc": "2.0",
+                "error": {
+                    "code": -32700,
+                    "message": "Parse error"
+                }
+            }
+
+    logger.info("Registering SSE endpoint...")
+    @app.get("/sse")  # type: ignore
+    async def sse_endpoint():
+        """MCP Server-Sent Events endpoint."""
+        logger.info("SSE endpoint called")
+        async def event_stream():
+            try:
+                # Send initial connection event
+                yield f"data: {json.dumps({'type': 'connected', 'timestamp': datetime.now().isoformat()})}\n\n"
+
+                # Keep connection alive with periodic pings
+                while True:
+                    await asyncio.sleep(30)  # Ping every 30 seconds
+                    yield f"data: {json.dumps({'type': 'ping', 'timestamp': datetime.now().isoformat()})}\n\n"
+            except asyncio.CancelledError:
+                logger.info("SSE connection closed")
+
+        return StreamingResponse(  # type: ignore
+            event_stream(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Headers": "*"
+            }
+        )
+
+    logger.info("All endpoints registered")
+else:
+    logger.warning("FastAPI dependencies not available, app will be None")
 
 
 def web_search(query: str, max_results: int = 10) -> str:
@@ -244,44 +299,179 @@ def search_health() -> str:
         return json.dumps(response, indent=2)
 
 
-# FastMCP implementation if available
-mcp = None
-if HAS_FASTMCP and FastMCP is not None:
-    mcp = FastMCP("web-search-server")
+# MCP Server implementation
+class MCPServer:
+    """Model Context Protocol server implementation."""
     
-    @mcp.tool()
-    def web_search_mcp(query: str, max_results: int = 10) -> str:
-        """MCP tool wrapper for web search."""
-        return web_search(query, max_results)
+    def __init__(self):
+        self.server_info = {
+            "name": "web-search-server",
+            "version": "1.0.0",
+            "description": "Web search server using DuckDuckGo"
+        }
+        self.capabilities = {
+            "tools": {
+                "listChanged": True
+            },
+            "resources": {},
+            "prompts": {}
+        }
+        self.tools = {
+            "tools": [
+                {
+                    "name": "web_search",
+                    "description": "Perform a web search using DuckDuckGo",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {
+                            "query": {
+                                "type": "string",
+                                "description": "Search query string"
+                            },
+                            "max_results": {
+                                "type": "integer",
+                                "description": "Maximum number of results to return",
+                                "default": 10,
+                                "minimum": 1,
+                                "maximum": 50
+                            }
+                        },
+                        "required": ["query"]
+                    }
+                }
+            ]
+        }
     
-    @mcp.tool()
-    def search_health_mcp() -> str:
-        """MCP tool wrapper for health check."""
-        return search_health()
+    def handle_request(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle MCP JSON-RPC requests."""
+        method = request_data.get("method")
+        params = request_data.get("params", {})
+        request_id = request_data.get("id")
+        
+        logger.info(f"Handling MCP request: {method}")
+        
+        try:
+            if method == "initialize":
+                return self._handle_initialize(request_id, params)
+            elif method == "tools/list":
+                return self._handle_tools_list(request_id)
+            elif method == "tools/call":
+                return self._handle_tools_call(request_id, params)
+            elif method == "ping":
+                return self._handle_ping(request_id)
+            else:
+                return {
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "error": {
+                        "code": -32601,
+                        "message": f"Method not found: {method}"
+                    }
+                }
+        except Exception as e:
+            logger.error(f"Error handling request {method}: {e}")
+            return {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "error": {
+                    "code": -32603,
+                    "message": f"Internal error: {str(e)}"
+                }
+            }
+    
+    def _handle_initialize(self, request_id: Any, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle initialize request."""
+        client_info = params.get("clientInfo", {})
+        logger.info(f"Initializing connection with client: {client_info}")
+        
+        return {
+            "jsonrpc": "2.0",
+            "id": request_id,
+            "result": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": self.capabilities,
+                "serverInfo": self.server_info
+            }
+        }
+    
+    def _handle_tools_list(self, request_id: Any) -> Dict[str, Any]:
+        """Handle tools/list request."""
+        return {
+            "jsonrpc": "2.0",
+            "id": request_id,
+            "result": self.tools
+        }
+    
+    def _handle_tools_call(self, request_id: Any, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle tools/call request."""
+        name = params.get("name")
+        arguments = params.get("arguments", {})
+        
+        if name == "web_search":
+            query = arguments.get("query")
+            max_results = arguments.get("max_results", 10)
+            
+            if not query:
+                return {
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "error": {
+                        "code": -32602,
+                        "message": "Missing required parameter: query"
+                    }
+                }
+            
+            # Perform the search
+            result = json.loads(web_search(query, max_results))
+            
+            return {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": {
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": json.dumps(result, indent=2)
+                        }
+                    ]
+                }
+            }
+        else:
+            return {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "error": {
+                    "code": -32602,
+                    "message": f"Unknown tool: {name}"
+                }
+            }
+    
+    def _handle_ping(self, request_id: Any) -> Dict[str, Any]:
+        """Handle ping request."""
+        return {
+            "jsonrpc": "2.0",
+            "id": request_id,
+            "result": {"pong": True}
+        }
+
+# Initialize MCP server
+mcp_server = MCPServer()
 
 
 async def main():
     """Main entry point for the MCP server."""
     logger.info("Starting MCP Web Search Server...")
+    logger.info(f"App is None: {app is None}")
 
     if app is not None and uvicorn is not None:
-        # Run FastAPI server
-        logger.info("Running HTTP server on port 8000")
+        # Run FastAPI server with MCP endpoints
+        logger.info("Running MCP HTTP server on port 8000")
         config = uvicorn.Config(app, host="0.0.0.0", port=8000)
         server = uvicorn.Server(config)
         await server.serve()
-    elif mcp is not None:
-        try:
-            # Run the FastMCP server
-            await mcp.run()
-        except KeyboardInterrupt:
-            logger.info("Server shutdown requested")
-        except Exception as e:
-            logger.error(f"Server error: {e}")
-            sys.exit(1)
     else:
         # Fallback: simple command-line interface for testing
-        logger.info("FastMCP not available, running in test mode")
+        logger.info("FastAPI not available, running in test mode")
         if len(sys.argv) > 1:
             query = " ".join(sys.argv[1:])
             print(web_search(query))
