@@ -22,10 +22,16 @@
 - Focus on clean API design for search functionality
 
 ## Project Structure
-Currently in planning phase. Core components will include:
-- MCP server implementation
-- Web search API integration
-- OpenCode tool wrapper
-- Docker configuration
+Production-ready MCP server with the following components:
+- **MCP server implementation** (`src/server.py`) - Full Model Context Protocol compliance with DuckDuckGo search
+- **Web search API integration** - DuckDuckGo search with URL extraction
+- **OpenCode tool wrapper** - `web_search` tool exposed via MCP protocol
+- **Docker configuration** - Containerized deployment with Docker Compose
 
-Note: This project is expanding OpenCode with web search capabilities.
+## Testing
+- **Unit tests**: `python -m pytest tests/test_server.py -v`
+- **Integration tests**: `python -m pytest tests/test_integration.py -v`
+- **Docker deployment**: `docker compose build && docker compose up -d`
+
+## Current Status
+MVP is ready to be published.
