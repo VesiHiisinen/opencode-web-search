@@ -21,6 +21,7 @@ This project implements an MCP server that allows OpenCode to perform web search
 
 - Python 3.8+
 - pip
+- Docker (optional)
 
 ### Install Dependencies
 
@@ -30,9 +31,18 @@ pip install -r requirements.txt
 
 ### Docker Installation
 
+Using Docker Compose (recommended):
+
+```bash
+docker compose build
+docker compose up -d
+```
+
+Or manually:
+
 ```bash
 docker build -t web-search-server .
-docker run web-search-server
+docker run -p 8000:8000 web-search-server
 ```
 
 ## Usage
@@ -110,11 +120,37 @@ Health check:
 ```
 src/
 ├── __init__.py
-└── server.py          # Main MCP server implementation
-requirements.txt       # Python dependencies
-Dockerfile            # Docker configuration
-AGENTS.md             # Agent guidelines
-project.md            # Project documentation
+└── server.py            # Main MCP server implementation
+tests/
+├── test_server.py       # Unit tests
+└── test_integration.py  # Integration/E2E tests
+requirements.txt         # Python dependencies
+Dockerfile               # Docker configuration
+docker-compose.yml       # Docker Compose configuration
+AGENTS.md                # Agent guidelines
+project.md               # Project documentation
+architecture.md          # Architecture documentation with diagrams
+```
+
+### Testing
+
+Run unit tests:
+
+```bash
+python -m pytest tests/test_server.py -v
+```
+
+Run integration tests (requires server running):
+
+```bash
+docker compose up -d
+python -m pytest tests/test_integration.py -v
+```
+
+Run all tests:
+
+```bash
+python -m pytest tests/ -v
 ```
 
 ### Error Handling
@@ -131,4 +167,8 @@ No configuration files are currently required. The server uses DuckDuckGo's HTML
 
 ## License
 
-This project is part of the OpenCode ecosystem.
+MIT License - see [LICENSE](LICENSE) file for details.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.

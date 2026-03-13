@@ -13,6 +13,8 @@ import sys
 import uuid
 from typing import Any, Dict, List, Optional
 from datetime import datetime
+from urllib.parse import parse_qs, urlparse, unquote
+import re
 
 # Try to import dependencies with proper error handling
 try:
@@ -63,6 +65,49 @@ class DuckDuckGoSearcher:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         }
     
+    def _extract_real_url(self, duckduckgo_url: str) -> str:
+        """
+        Extract the real URL from DuckDuckGo's redirect URL.
+        
+        DuckDuckGo returns URLs like:
+        //duckduckgo.com/l/?uddg=https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FParis
+        
+        We need to extract and decode the 'uddg' parameter to get the actual URL.
+        
+        Args:
+            duckduckgo_url: The redirect URL from DuckDuckGo
+            
+        Returns:
+            The decoded real URL
+        """
+        if not duckduckgo_url:
+            return duckduckgo_url
+        
+        # Handle protocol-relative URLs (//duckduckgo.com/...)
+        if duckduckgo_url.startswith('//'):
+            duckduckgo_url = 'https:' + duckduckgo_url
+        
+        try:
+            # Parse the URL
+            parsed = urlparse(duckduckgo_url)
+            
+            # Extract query parameters
+            query_params = parse_qs(parsed.query)
+            
+            # Get the 'uddg' parameter which contains the real URL
+            if 'uddg' in query_params:
+                real_url = query_params['uddg'][0]
+                # URL decode the URL
+                decoded_url = unquote(real_url)
+                return decoded_url
+            
+            # If no 'uddg' parameter, return the original URL
+            return duckduckgo_url
+            
+        except Exception as e:
+            logger.warning(f"Failed to extract real URL from {duckduckgo_url}: {e}")
+            return duckduckgo_url
+    
     def search(self, query: str, max_results: int = 10) -> List[Dict[str, Any]]:
         """
         Perform a web search using DuckDuckGo.
@@ -101,7 +146,9 @@ class DuckDuckGoSearcher:
                 
                 if title_tag and snippet_tag:
                     title = title_tag.get_text(strip=True)
-                    url = title_tag.get('href', '')
+                    raw_url = title_tag.get('href', '')
+                    # Extract the real URL from DuckDuckGo redirect
+                    url = self._extract_real_url(raw_url)
                     snippet = snippet_tag.get_text(strip=True)
                     
                     results.append({
@@ -181,6 +228,23 @@ if HAS_FASTAPI and FastAPI is not None and JSONResponse is not None and Streamin
             ]
         }
 
+    @app.post("/")
+    async def root_mcp_endpoint(request_data: Dict[str, Any]):
+        """MCP JSON-RPC endpoint at root for compatibility."""
+        logger.info("Root MCP endpoint called")
+        try:
+            response = mcp_server.handle_request(request_data)
+            return response
+        except Exception as e:
+            logger.error(f"Root MCP endpoint error: {e}")
+            return {
+                "jsonrpc": "2.0",
+                "error": {
+                    "code": -32700,
+                    "message": "Parse error"
+                }
+            }
+
     logger.info("Registering SSE endpoint...")
     @app.get("/sse")
     async def sse_endpoint():
@@ -205,8 +269,8 @@ if HAS_FASTAPI and FastAPI is not None and JSONResponse is not None and Streamin
 
         return StreamingResponse(  # type: ignore
             event_stream(),
-            media_type="text/event-stream",
             headers={
+                "Content-Type": "text/event-stream",
                 "Cache-Control": "no-cache",
                 "Connection": "keep-alive",
                 "Access-Control-Allow-Origin": "*",
