@@ -88,7 +88,7 @@ Fixed the MCP compliance issue by implementing the correct HTTP with SSE transpo
     {
       "title": "Paris - Wikipedia",
       "url": "//duckduckgo.com/l/?uddg=https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FParis&rut=d3ef43df32fbaf8b4f25c143030f01ee206c94da45b1d901a62d8d5ebc1f4b63",
-      "snippet": "Paris[a] is thecapitaland largest city ofFrance, with an estimated city population of 2,048,472 in an area of 105.4 km 2 (40.7 sq mi), and a metropolitan population of 13,171,056 as of January 2025. [3] Located on the river Seine in the centre of the \u00cele-de-Franceregion, it is the largest metropolitan area and fourth-most populous city in the European Union (EU). Nicknamed the City of ..."
+      "snippet": "Paris[a] is thecapitaland largest city ofFrance, with an estimated city population of 2,048,472 in an area of 105.4 km 2 (40.7 sq mi), and a metropolitan population of 13,171,056 as of January 2025. [3] Located on the river Seine in the centre of the Île-de-Franceregion, it is the largest metropolitan area and fourth-most populous city in the European Union (EU). Nicknamed the City of ..."
     },
     {
       "title": "Paris | Definition, Map, Population, Facts, & History | Britannica",
@@ -97,7 +97,7 @@ Fixed the MCP compliance issue by implementing the correct HTTP with SSE transpo
     },
     {
       "title": "What is the Capital of France? - Mappr",
-      "url": "//duckduckgo.com/l/?uddg=https%3A%2F%2Fwww.mappr.co%2Fcapital%2Dcities%2Ffrance%2F&rut=0e4da48f20ad530427eadc3d3f78ec9cff04c2f2e0d073c7ae96c67638106540",
+      "url": "//duckduckgo.com/l/?uddg=https%3A%2F%2Fwww.mappr.co%2Fcapital-cities%2Ffrance%2F&rut=0e4da48f20ad530427eadc3d3f78ec9cff04c2f2e0d073c7ae96c67638106540",
       "snippet": "Learn about Paris, thecapitalofFrance, and its rich history, culture, and geography. Discover its landmarks, climate, population, and role as a global city."
     }
   ],
@@ -358,3 +358,54 @@ $ curl -s "http://localhost:8000/search?q=python&max_results=2"
 - URL extraction working for smaller models
 - Tests written (unit + integration)
 - Docker container running with fixes
+
+---
+
+# Development Journal - March 13, 2026
+
+## GitHub Publication
+
+### Repository Published
+
+**Action Taken:**
+- Created public GitHub repository: `opencode-web-search`
+- Updated `AGENTS.md` to reflect production-ready status (was still showing "planning phase")
+- Committed final changes
+- Pushed to GitHub using `gh` CLI
+
+**Commands Executed:**
+```bash
+gh repo create opencode-web-search --public --source=. --push --description "MCP server for web search capabilities in OpenCode using DuckDuckGo"
+```
+
+**Repository Details:**
+- **URL:** https://github.com/VesiHiisinen/opencode-web-search
+- **Visibility:** Public
+- **License:** MIT (Ville Vettenranta, 2026)
+- **Description:** MCP server for web search capabilities in OpenCode using DuckDuckGo
+
+**Files Published:**
+1. `.gitignore` - Python and Docker ignore patterns
+2. `AGENTS.md` - Agent guidelines and commands
+3. `Dockerfile` - Container configuration
+4. `LICENSE` - MIT license
+5. `README.md` - Project documentation
+6. `Research-MCP Tech Stack Choice.txt` - Early research notes
+7. `architecture.md` - Comprehensive architecture documentation
+8. `docker-compose.yml` - Docker Compose configuration
+9. `journal.md` - Development journal
+10. `project.md` - Project plan
+11. `requirements.txt` - Python dependencies
+12. `src/__init__.py` - Package init
+13. `src/server.py` - MCP server implementation
+14. `tests/test_integration.py` - Integration tests
+15. `tests/test_server.py` - Unit tests
+
+**Verification:**
+- ✅ 7 commits pushed to master branch
+- ✅ Remote `origin` configured correctly (git@github.com:VesiHiisinen/opencode-web-search.git)
+- ✅ No secrets or sensitive data in repository
+- ✅ All files properly tracked and committed
+
+**Current Status:** ✅ **PROJECT PUBLISHED**
+The MCP web search server is now live on GitHub and ready for public use.
