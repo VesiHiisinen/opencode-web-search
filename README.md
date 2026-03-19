@@ -42,7 +42,7 @@ Or manually:
 
 ```bash
 docker build -t web-search-server .
-docker run -p 8000:8000 web-search-server
+docker run -p 127.0.0.1:8000:8000 web-search-server
 ```
 
 ## Usage
