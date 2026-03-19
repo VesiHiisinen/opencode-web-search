@@ -64,3 +64,6 @@ logs/
 local_settings.py
 database.db
 *.sqlite3
+
+# Cross-project journal symlink — private, machine-local, must never go to public git
+main_journal.md

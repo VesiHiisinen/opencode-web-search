@@ -1,1 +1,0 @@
-/home/vettis/projects/ai/opencode/main_journal.md
