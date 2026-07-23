@@ -8,6 +8,13 @@ services:
       - "127.0.0.1:8000:8000"
     environment:
       PYTHONUNBUFFERED: "1"
+      # Google PSE Configuration
+      GOOGLE_PSE_API_KEY: "${GOOGLE_PSE_API_KEY}"
+      GOOGLE_PSE_ENGINE_ID: "${GOOGLE_PSE_ENGINE_ID}"
+      # Optional: Set default provider (duckduckgo or google)
+      DEFAULT_SEARCH_PROVIDER: "${DEFAULT_SEARCH_PROVIDER:-duckduckgo}"
+      # Optional: Enable automatic fallback on provider failure
+      ENABLE_FALLBACK: "${ENABLE_FALLBACK:-false}"
     restart: unless-stopped
     # For debugging, you can add:
     # command: python src/server.py

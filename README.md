@@ -1,19 +1,25 @@
 # MCP Web Search Server
 
-A Model Context Protocol (MCP) server that provides web search capabilities using DuckDuckGo for OpenCode integration.
+A Model Context Protocol (MCP) server that provides web search capabilities using DuckDuckGo and Google PSE (Programmable Search Engine) for OpenCode integration.
 
 ## Overview
 
-This project implements an MCP server that allows OpenCode to perform web searches. The server uses DuckDuckGo as the search provider and provides both MCP tool integration and a fallback command-line interface for testing.
+This project implements an MCP server that allows OpenCode to perform web searches. The server supports two search providers:
+
+- **DuckDuckGo**: Free, no authentication required, up to 50 results
+- **Google PSE**: Requires API credentials, up to 10 results, 100 queries/day free tier
+
+The server uses FastMCP with Streamable HTTP transport for compatibility with modern MCP clients (protocol version 2025-03-26).
 
 ## Features
 
-- **Web Search**: Perform searches using DuckDuckGo
+- **Dual Search Providers**: DuckDuckGo and Google PSE with automatic provider selection
 - **MCP Integration**: Full MCP server implementation with FastMCP
-- **Health Checks**: Built-in health monitoring
+- **Streamable HTTP Transport**: Modern MCP protocol compliance
+- **Health Checks**: Built-in health endpoint for all providers
 - **Error Handling**: Comprehensive error handling and logging
-- **Docker Support**: Containerized deployment
-- **Fallback Mode**: Command-line testing when dependencies are unavailable
+- **Docker Support**: Containerized deployment with environment variable support
+- **Fallback Support**: Optional automatic fallback to alternate provider on failure
 
 ## Installation
 
@@ -45,39 +51,59 @@ docker build -t web-search-server .
 docker run -p 127.0.0.1:8000:8000 web-search-server
 ```
 
+## Configuration
+
+### Environment Variables
+
+Create a `.env` file in the project root (see `.env.example`):
+
+```bash
+# Google PSE Credentials (optional, only needed for Google provider)
+GOOGLE_PSE_API_KEY=your_api_key_here
+GOOGLE_PSE_ENGINE_ID=your_engine_id_here
+
+# Optional: Default provider (duckduckgo or google)
+DEFAULT_SEARCH_PROVIDER=duckduckgo
+
+# Optional: Enable automatic fallback on provider failure
+ENABLE_FALLBACK=false
+```
+
+**Note**: DuckDuckGo requires no credentials. Google PSE requires both `GOOGLE_PSE_API_KEY` and `GOOGLE_PSE_ENGINE_ID`.
+
 ## Usage
 
-### MCP Server Mode (with FastMCP)
-
-When FastMCP is available, the server runs as a full MCP server:
+### Running the Server
 
 ```bash
 python src/server.py
 ```
 
-### Command-Line Testing Mode
+The server starts on port 8000 and provides:
+- MCP endpoint for tool invocations
+- Health check endpoint at `/health`
 
-Without FastMCP or when testing:
+### Health Check
 
 ```bash
-# Health check
-python src/server.py
-
-# Search query
-python src/server.py "your search query here"
+curl http://localhost:8000/health
 ```
 
 ## API
 
 ### Tools
 
-#### `web_search(query: str, max_results: int = 10) -> str`
+#### `web_search(query: str, max_results: int = 10, provider: str = "auto") -> str`
 
 Performs a web search and returns results in JSON format.
 
 **Parameters:**
 - `query`: Search query string
 - `max_results`: Maximum number of results (1-50, default: 10)
+- `provider`: Search provider to use:
+  - `"auto"`: Use default provider (env-configurable, default: duckduckgo)
+  - `"duckduckgo"`: Use DuckDuckGo (50 results max, no auth required)
+  - `"google"`: Use Google PSE (10 results max, requires API credentials)
 
 **Returns:** JSON string with search results
 
@@ -85,7 +111,7 @@ Performs a web search and returns results in JSON format.
 
 Checks the health status of the search service.
 
-**Returns:** JSON string with health status
+**Returns:** JSON string with health status for all configured providers
 
 ### Response Format
 
@@ -93,6 +119,7 @@ Search results:
 ```json
 {
   "query": "search term",
+  "provider": "duckduckgo",
   "results": [
     {
       "title": "Result Title",
@@ -109,7 +136,12 @@ Health check:
 {
   "status": "healthy",
   "message": "Web search service is operational",
-  "test_query_successful": true
+  "providers": {
+    "duckduckgo": {
+      "status": "healthy",
+      "max_results": 50
+    }
+  }
 }
 ```
 
@@ -127,9 +159,11 @@ tests/
 requirements.txt         # Python dependencies
 Dockerfile               # Docker configuration
 docker-compose.yml       # Docker Compose configuration
+.env.example             # Environment variable template
 AGENTS.md                # Agent guidelines
 project.md               # Project documentation
 architecture.md          # Architecture documentation with diagrams
+GOOGLE_PSE_IMPLEMENTATION_PLAN.md  # Implementation details
 ```
 
 ### Testing
@@ -153,6 +187,13 @@ Run all tests:
 python -m pytest tests/ -v
 ```
 
+### Provider Limits
+
+| Provider | Max Results | Authentication | Notes |
+|----------|-------------|----------------|-------|
+| DuckDuckGo | 50 | None | Be respectful with rate |
+| Google PSE | 10 | API Key + Engine ID | 100 queries/day free tier |
+
 ### Error Handling
 
 The server gracefully handles:
@@ -160,10 +201,8 @@ The server gracefully handles:
 - Network errors
 - Invalid search queries
 - Parsing errors
-
-## Configuration
-
-No configuration files are currently required. The server uses DuckDuckGo's HTML search endpoint with default settings.
+- Missing provider credentials
+- API quota exceeded
 
 ## License
 

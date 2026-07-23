@@ -67,3 +67,6 @@ database.db
 
 # Cross-project journal symlink — private, machine-local, must never go to public git
 main_journal.md
+
+# Internal planning doc - never commit (contains design notes, not for public repo)
+GOOGLE_PSE_IMPLEMENTATION_PLAN.md

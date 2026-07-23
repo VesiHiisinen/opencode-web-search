@@ -39,15 +39,22 @@ Key patterns most relevant to this project:
 
 ## Project Structure
 Production-ready MCP server with the following components:
-- **MCP server implementation** (`src/server.py`) - Full Model Context Protocol compliance with DuckDuckGo search
-- **Web search API integration** - DuckDuckGo search with URL extraction
-- **OpenCode tool wrapper** - `web_search` tool exposed via MCP protocol
-- **Docker configuration** - Containerized deployment with Docker Compose
+- **MCP server implementation** (`src/server.py`) - Full Model Context Protocol compliance with DuckDuckGo and Google PSE providers
+- **Web search API integration** - Dual provider support: DuckDuckGo (no auth) and Google PSE (API credentials)
+- **Provider architecture** - Abstract base class with pluggable search providers
+- **OpenCode tool wrapper** - `web_search` tool with configurable provider parameter
+- **Docker configuration** - Containerized deployment with environment variable support
 
 ## Testing
 - **Unit tests**: `python -m pytest tests/test_server.py -v`
 - **Integration tests**: `python -m pytest tests/test_integration.py -v`
 - **Docker deployment**: `docker compose build && docker compose up -d`
 
+## Environment Variables
+- `GOOGLE_PSE_API_KEY` - Google PSE API key (required for Google provider)
+- `GOOGLE_PSE_ENGINE_ID` - Google PSE Engine ID (required for Google provider)
+- `DEFAULT_SEARCH_PROVIDER` - Default provider: `duckduckgo` or `google` (default: duckduckgo)
+- `ENABLE_FALLBACK` - Enable fallback to alternative provider on failure: `true` or `false` (default: false)
+
 ## Current Status
-MVP is ready to be published.
+MVP with dual provider support (DuckDuckGo + Google PSE) is ready to be published.
