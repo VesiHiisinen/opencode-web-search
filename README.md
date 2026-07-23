@@ -71,6 +71,24 @@ ENABLE_FALLBACK=false
 
 **Note**: DuckDuckGo requires no credentials. Google PSE requires both `GOOGLE_PSE_API_KEY` and `GOOGLE_PSE_ENGINE_ID`.
 
+## OpenCode Integration
+
+To use this MCP server with OpenCode, add the following configuration to your `~/.config/opencode/opencode.json`:
+
+```json
+{
+  "mcp": {
+    "web-search": {
+      "type": "remote",
+      "url": "http://localhost:8000",
+      "enabled": true
+    }
+  }
+}
+```
+
+This enables the `web_search` tool in OpenCode for performing web searches.
+
 ## Usage
 
 ### Running the Server
