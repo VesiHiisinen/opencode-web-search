@@ -16,6 +16,18 @@ services:
       # Optional: Enable automatic fallback on provider failure
       ENABLE_FALLBACK: "${ENABLE_FALLBACK:-false}"
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+          pids: 200
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     # For debugging, you can add:
     # command: python src/server.py
     # Or keep default entrypoint in Dockerfile

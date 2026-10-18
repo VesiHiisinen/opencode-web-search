@@ -35,6 +35,23 @@ The server uses FastMCP with Streamable HTTP transport for compatibility with mo
 pip install -r requirements.txt
 ```
 
+### OpenCode Configuration
+
+To integrate this MCP server with OpenCode, add the following to your `~/.config/opencode/opencode.json`:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "websearch": {
+      "type": "remote",
+      "url": "http://127.0.0.1:8000",
+      "enabled": true
+    }
+  }
+}
+```
+
 ### Docker Installation
 
 Using Docker Compose (recommended):
